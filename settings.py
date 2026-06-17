@@ -2,7 +2,7 @@ BOT_TOKEN = "8836221152:AAH2QU7lYXdtABAv_au8fsUdf4qqEeRODps"
 BOT_USERNAME = "EscrowVaultDealsBot"
 WELCOME_IMAGE_PATH = "assets/welcome.png"
 ESCROW_ACCOUNT = "@EscrowVaultSupport"
-OWNER_ID="5246733007"
+OWNER_ID="850029996"
 SUPPORT_USERNAME="@EscrowVaultSupport"
 # Requisites. If a currency requisite is empty, order creation will stop and ask the user to add it.
 TON_ADDRESS = ""
