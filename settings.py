@@ -1,4 +1,4 @@
-BOT_TOKEN = "8836221152:AAH2QU7lYXdtABAv_au8fsUdf4qqEeRODps"
+BOT_TOKEN = "8836221152:AAEd-3p1XkQYEFQCU4UPVaZvj4CigusWN8U"
 BOT_USERNAME = "EscrowVaultDealsBot"
 WELCOME_IMAGE_PATH = "assets/welcome.png"
 ESCROW_ACCOUNT = "@EscrowVaultSupport"
