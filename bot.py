@@ -237,9 +237,17 @@ def main():
         print("Set BOT_TOKEN in .env or settings.py first.")
         return
 
+    reset_telegram_updates()
     start_render_health_server()
     print("EscrowVault Python bot is running.")
     run_long_polling()
+
+
+def reset_telegram_updates():
+    try:
+        api("deleteWebhook", {"drop_pending_updates": True})
+    except RuntimeError as error:
+        print(f"Could not reset Telegram updates: {error}")
 
 
 def run_long_polling():
@@ -260,6 +268,10 @@ def run_long_polling():
             print("Bot stopped.")
             return
         except Exception as error:
+            if "getUpdates HTTP 409" in str(error):
+                print("Another bot instance is already polling this token. Stop the duplicate Railway/local process.")
+                time.sleep(10)
+                continue
             print(f"Error: {error}")
             time.sleep(2)
 
@@ -2484,7 +2496,6 @@ def send_main_menu(chat_id, session):
 
 if __name__ == "__main__":
     main()
-
 
 
 
