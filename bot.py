@@ -32,8 +32,10 @@ USER_SETTINGS_FILE = DATA_DIR / "user_settings.json"
 
 CONFIG = {}
 SESSIONS = {}
+CALLBACK_DEDUP = {}
 OFFSET = 0
 CURRENCIES = ("STARS", "TON", "USDT_TON", "RUB", "UAH", "USD", "BYN")
+CALLBACK_DEDUP_SECONDS = 2.0
 
 CURRENCY_EMOJI_IDS = {
     "STARS": ("5920101247708303325", "⭐"),
@@ -336,7 +338,10 @@ def handle_update(update):
         handle_balance_amount(message, session, text)
         return
 
-    send_main_menu(chat_id, session)
+    send_text(chat_id, tr(chat_id, "Я не жду текст на этом шаге. Выберите действие кнопками ниже.", "I am not waiting for text at this step. Choose an action below."), {
+        "parse_mode": "HTML",
+        **back_keyboard("menu", chat_id),
+    })
 
 
 def handle_callback(query):
@@ -347,6 +352,8 @@ def handle_callback(query):
     remember_user(user)
 
     api("answerCallbackQuery", {"callback_query_id": query["id"]})
+    if is_duplicate_callback(chat_id, user.get("id"), data):
+        return
 
     if data == "owner_panel":
         if is_owner(user.get("id")):
@@ -1248,7 +1255,7 @@ def send_balance_list(chat_id):
 
 
 def send_referrals(chat_id, user):
-    bot_username = CONFIG.get("BOT_USERNAME", "EscrowVaultBot")
+    bot_username = CONFIG.get("BOT_USERNAME", "EscrowVaultBot").lstrip("@")
     code = referral_code(user.get("id"))
     data = load_json(REFERRALS_FILE, {})
     invited = data.get("invited", {}).get(str(user.get("id")), [])
@@ -1994,8 +2001,21 @@ def save_json(file_path, data):
 
 def get_session(chat_id):
     if chat_id not in SESSIONS:
-        SESSIONS[chat_id] = {"lang": None, "step": "language", "order": {}}
+        saved_lang = get_user_language(chat_id)
+        SESSIONS[chat_id] = {"lang": saved_lang, "step": "menu" if saved_lang else "language", "order": {}}
     return SESSIONS[chat_id]
+
+
+def is_duplicate_callback(chat_id, user_id, data):
+    now = time.time()
+    stale_keys = [key for key, timestamp in CALLBACK_DEDUP.items() if now - timestamp > 30]
+    for key in stale_keys:
+        CALLBACK_DEDUP.pop(key, None)
+
+    key = (str(chat_id), str(user_id or ""), str(data or ""))
+    previous = CALLBACK_DEDUP.get(key)
+    CALLBACK_DEDUP[key] = now
+    return previous is not None and now - previous < CALLBACK_DEDUP_SECONDS
 
 
 def is_username(value):
@@ -2464,9 +2484,6 @@ def send_main_menu(chat_id, session):
 
 if __name__ == "__main__":
     main()
-
-
-
 
 
 
