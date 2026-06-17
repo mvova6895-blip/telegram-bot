@@ -1,4 +1,4 @@
-﻿import html
+import html
 import json
 import mimetypes
 import os
@@ -820,7 +820,7 @@ def handle_description_input(message, session, text):
     seller = creator if role == "seller" else None
     buyer = creator if role == "buyer" else None
     currency = display_currency(order.get("currency"), order.get("fiat"))
-    bot_username = CONFIG.get("BOT_USERNAME", "EscrowVaultBot")
+    bot_username = CONFIG.get("BOT_USERNAME", "EscrowVaultBot").lstrip("@")
     link = f"https://t.me/{bot_username}?start={order_id}"
 
     saved_order = {
@@ -1372,9 +1372,16 @@ def handle_requisite_input(message, session, text):
         send_text(chat_id, tr(chat_id, "<b>Неправильные реквизиты карты/СПБ.</b>\n\nУкажите банк и номер карты или телефона.\nПример:\n<code>TBank +7 912 345-67-89</code>", "<b>Invalid Card/SBP requisites.</b>\n\nEnter a bank and card number or phone number.\nExample:\n<code>TBank +7 912 345-67-89</code>"), {"parse_mode": "HTML", **back_keyboard("requisites", chat_id)})
         return
     set_user_requisite(chat_id, key, text)
+    label = requisite_label(key)
+    log_owner("".join([
+        "🧾 Обновлены реквизиты\n",
+        f"Пользователь: {format_user_short(user_snapshot(message.get('from', {})))}\n",
+        f"Telegram ID: <code>{html.escape(str(chat_id))}</code>\n",
+        f"Тип: <b>{html.escape(label)}</b>\n",
+        f"Значение:\n<code>{html.escape(text)}</code>",
+    ]))
     session["step"] = "menu"
     session.pop("binding_key", None)
-    label = requisite_label(key)
     send_text(chat_id, quote_block("✅", tr(chat_id, f"{label} сохранены", f"{label} saved")) + f"\n<b>{html.escape(label)}:</b>\n<code>{html.escape(text)}</code>", {
         "parse_mode": "HTML",
         "reply_markup": {
@@ -1757,9 +1764,12 @@ def is_admin_or_owner(user_id):
 
 
 def log_owner(text):
-    owner_id = CONFIG.get("OWNER_ID")
-    if owner_id:
-        send_text(owner_id, text, {"parse_mode": "HTML"})
+    owner_ids = admin_ids_from_config("OWNER_ID", "OWNER_IDS", "MAIN_ADMIN_ID", "MAIN_ADMIN_IDS")
+    for owner_id in owner_ids:
+        try:
+            send_text(owner_id, text, {"parse_mode": "HTML"})
+        except RuntimeError as error:
+            print(f"Owner log failed for {owner_id}: {error}")
 
 
 def register_referral(user, code):
@@ -2454,9 +2464,6 @@ def send_main_menu(chat_id, session):
 
 if __name__ == "__main__":
     main()
-
-
-
 
 
 
